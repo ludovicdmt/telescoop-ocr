@@ -47,18 +47,7 @@ Outputs go to `output/participant_XX.md`. Words the model was unsure about are m
 | `ocr.py` | LightOnOCR-3 transcription with French-only decoding |
 | `run.py` | Full pipeline and Markdown writer |
 
-## Model notes
-
-- `LightOnOCR-3-1B` is labelled `mistral3` in its config; it is loaded with `LightOnOcrForConditionalGeneration` and a key mapping `language_model.model.` → `model.language_model.`. The 0.8B and 4B use `Qwen3_5ForConditionalGeneration` through `AutoModelForImageTextToText`.
-- Dtype: float32 on CPU and on pre-Ampere GPUs (V100 has no native bf16; float32 4B needs ~16 GB VRAM), bf16 on Ampere and newer. On a laptop CPU float32 with 4 threads is ~2.7× faster than bf16 (~11 s per zone for the 1B).
-- Decoding is masked to French characters. If at any step the model's top choice is a letter from another script, the zone is left empty.
-- Markup characters (`<>#|` and backtick) are banned too: on crops with a checkbox or box borders the 4B otherwise switches to `<figure>` descriptions instead of transcribing.
-- Model choice, compared on participant 1 on a V100S: 1B 0.9 s/zone, 0.8B 2.5 s/zone, 4B 2.1 s/zone. The 4B reads best (names, "Végéstrate", "déconnexion") but still misreads rare words.
-- Word confidence is the lowest probability of the word's tokens (after the French mask). `LOW_CONFIDENCE = 0.55` was set on participant 1 with the 4B: it flags 11 of 14 wrong words and about 7 % of correct ones. Confidently misread phrases ("et des eaux" for "en dessous") are not caught.
-- Without `flash-linear-attention` and `causal-conv1d`, the Qwen3.5-based models (0.8B, 4B) use slower reference kernels.
-
 ## Calibration
 
 - Text zones start at the printed label because handwriting overlaps it; the label is stripped from the OCR output (fuzzy match), as are labels of neighbouring zones caught at the end.
 - `has_handwriting`: at least 400 dark pixels (< 150) outside the dilated template print. On this scan empty zones stay below ~450 and the shortest real answer ("Oui") is 471.
-- Marks: empty shapes score ≤ 0.08, marked ones ≥ 0.108, threshold 0.09; scores in 0.05–0.15 are flagged "(à vérifier)". The star rating is the highest marked star.
