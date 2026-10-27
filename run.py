@@ -21,7 +21,7 @@ OUTPUT_DIR = Path("output")
 CANVAS_ORDER = ["canevas1", "canevas2", "canevas3", "consommation"]
 LABEL_MATCH = 0.75
 UNCERTAIN = " _(à vérifier)_"
-LOW_CONFIDENCE = 0.5
+LOW_CONFIDENCE = 0.55
 EMPTY = "_(vide)_"
 
 
@@ -60,8 +60,11 @@ def clean(text):
 def mark_low_confidence(entry):
     text = entry["text"]
     for start, end, probability in reversed(entry["words"]):
-        if probability < LOW_CONFIDENCE:
-            text = f"{text[:start]}[{text[start:end]}?]{text[end:]}"
+        word = text[start:end].strip("-")
+        if probability < LOW_CONFIDENCE and word:
+            start = text.index(word, start)
+            end = start + len(word)
+            text = f"{text[:start]}[{word}?]{text[end:]}"
     return text
 
 

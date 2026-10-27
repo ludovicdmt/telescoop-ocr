@@ -54,7 +54,7 @@ Outputs go to `output/participant_XX.md`. Words the model was unsure about are m
 - Decoding is masked to French characters. If at any step the model's top choice is a letter from another script, the zone is left empty.
 - Markup characters (`<>#|` and backtick) are banned too: on crops with a checkbox or box borders the 4B otherwise switches to `<figure>` descriptions instead of transcribing.
 - Model choice, compared on participant 1 on a V100S: 1B 0.9 s/zone, 0.8B 2.5 s/zone, 4B 2.1 s/zone. The 4B reads best (names, "Végéstrate", "déconnexion") but still misreads rare words.
-- Word confidence is the lowest probability of the word's tokens (after the French mask). With the 1B on participant 1, a 0.5 threshold flags 4 of 7 wrong words and about 1 in 14 correct ones.
+- Word confidence is the lowest probability of the word's tokens (after the French mask). `LOW_CONFIDENCE = 0.55` was set on participant 1 with the 4B: it flags 11 of 14 wrong words and about 7 % of correct ones. Confidently misread phrases ("et des eaux" for "en dessous") are not caught.
 - Without `flash-linear-attention` and `causal-conv1d`, the Qwen3.5-based models (0.8B, 4B) use slower reference kernels.
 
 ## Calibration
