@@ -1,0 +1,87 @@
+template: data/canvas cotech elargis.pdf
+
+canvases:
+  canevas1:
+    title: Canevas 1 - Rapport d'étonnement
+    page: 0
+    clip: [421, 0, 842, 595]
+    fields:
+      - {question: "Donnée étudiée", type: text, label: "Donnée étudiée :", bbox: [640, 24, 824, 77]}
+      - {question: "Votre nom", type: text, label: "Votre nom :", bbox: [444, 84, 604, 122]}
+      - {question: "Votre service", type: text, label: "Votre service :", bbox: [603, 84, 826, 122]}
+      - {question: "Selon vous, à quoi sert cette donnée ?", type: text, label: "Selon vous, à quoi sert cette donnée ?", bbox: [444, 143, 824, 202]}
+      - {question: "Qui semble en être le destinataire ?", type: text, label: "Qui semble en être le destinataire ?", bbox: [444, 200, 824, 259]}
+      - {question: "Est-ce qu'elle vous intéresse ?", type: text, label: "Est-ce qu’elle vous intéresse ?", bbox: [444, 257, 824, 316]}
+      - {question: "Ce qui vous pose question", type: text, label: "Ce qui vous pose question", bbox: [444, 314, 824, 375]}
+      - question: Compréhension globale de la donnée
+        type: stars
+        stars: [[497, 429, 517, 448], [531, 429, 551, 448], [565, 429, 585, 448], [599, 429, 619, 448]]
+      - question: Clarté de la plateforme
+        type: stars
+        stars: [[497, 480, 517, 499], [531, 480, 551, 499], [565, 480, 585, 499], [599, 480, 619, 499]]
+      - {question: "Commentaire sur le ressenti", type: text, bbox: [444, 500, 824, 547]}
+
+  canevas2:
+    title: Canevas 2 - Jugement révisé
+    page: 1
+    clip: [0, 0, 405, 595]
+    fields:
+      - {question: "Donnée étudiée", type: text, label: "Donnée étudiée :", bbox: [214, 20, 397, 70]}
+      - {question: "Ce que j'avais bien compris", type: text, label: "Ce que j’avais bien compris", bbox: [15, 103, 200, 211]}
+      - {question: "Ce qui était confus", type: text, label: "Ce qui était confus", bbox: [212, 103, 397, 211]}
+      - question: Compréhension révisée de la donnée
+        type: stars
+        stars: [[70, 266, 90, 285], [104, 266, 124, 285], [138, 266, 158, 285], [172, 266, 192, 285]]
+      - question: Votre intérêt
+        type: stars
+        stars: [[113, 317, 133, 336], [147, 317, 167, 336], [181, 317, 201, 336], [215, 317, 235, 336], [249, 317, 269, 336]]
+      - {question: "Commentaire sur le ressenti", type: text, bbox: [15, 350, 397, 396]}
+      - {question: "Ce qui aurait amélioré ma compréhension : sur la plateforme", type: text, label: "Sur la plateforme", bbox: [15, 428, 200, 536]}
+      - {question: "Ce qui aurait amélioré ma compréhension : information sur la donnée", type: text, label: "Information sur la donnée", bbox: [212, 428, 397, 536]}
+
+  canevas3:
+    title: Canevas 3 - Ouverture
+    page: 0
+    clip: [0, 0, 421, 595]
+    repeat:
+      count: 4
+      dy: 116
+      prefix: Plan
+    fields:
+      - question: Plan concerné
+        type: checkboxes
+        options: [{label: Plan coché, bbox: [32, 112, 44, 124]}]
+      - {question: "Nom du plan", type: text, bbox: [20, 100, 212, 200]}
+      - {question: "Donnée iArbre pertinente ?", type: text, label: "Donnée iArbre pertinente ?", bbox: [212, 100, 402, 160]}
+      - {question: "Une ouverture sur un besoin ?", type: text, label: "Une ouverture sur un besoin ?", bbox: [212, 148, 402, 202]}
+
+  consommation:
+    title: Consommation de la donnée
+    page: 1
+    clip: [405, 0, 842, 595]
+    fields:
+      - {question: "A quels cas d'usage pourrait-elle répondre ?", type: text, label: "A quels cas d’usage pourrait-elle répondre ?", bbox: [413, 37, 795, 140]}
+      - question: Avec qui consommeriez-vous cette donnée ?
+        type: checkboxes
+        options:
+          - {label: Interne service, bbox: [425, 170, 437, 182]}
+          - {label: Collègues autre direction, bbox: [425, 196, 437, 208]}
+          - {label: Partenaires externes, bbox: [425, 222, 437, 234]}
+      - {question: "Avec qui (précisions)", type: text, bbox: [600, 160, 795, 245]}
+      - question: De quelle manière consommeriez-vous cette donnée ?
+        type: checkboxes
+        options:
+          - {label: Sur la carte iArbre, bbox: [425, 275, 437, 287]}
+          - {label: Sur le rapport iArbre, bbox: [425, 301, 437, 313]}
+          - {label: Connexion flux et QGis, bbox: [425, 327, 437, 339]}
+          - {label: Demande à mon service SIG, bbox: [425, 353, 437, 365]}
+          - {label: Sur Geonet, bbox: [425, 379, 437, 391]}
+          - {label: Autre, bbox: [611, 275, 623, 287]}
+      - {question: "Autre (précisions)", type: text, label: "Autre ?", bbox: [600, 286, 795, 397]}
+      - question: Comment utiliser cette donnée ?
+        type: checkboxes
+        options:
+          - {label: Seule, bbox: [425, 428, 437, 440]}
+          - {label: Couplée avec d'autres données, bbox: [425, 454, 437, 466]}
+      - {question: "Comment utiliser (précisions)", type: text, bbox: [413, 466, 795, 510]}
+      - {question: "Aurait-elle besoin d'évolutions ?", type: text, label: "Aurait-elle besoin d’évolutions ?", bbox: [413, 509, 795, 569]}

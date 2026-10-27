@@ -1,0 +1,64 @@
+# telescoop-ocr
+
+Transcribes handwritten workshop canvases (scanned PDF) into one Markdown file per participant, question by question.
+
+Each scanned page is registered onto the blank template, every answer zone is cropped, handwritten zones are transcribed with [LightOnOCR-3](https://huggingface.co/lightonai), and checkboxes and star ratings are read from ink density.
+
+## Inputs
+
+Put the two PDFs in `data/` (not versioned, they contain personal data):
+
+- `data/Scan_atelier_cotech_elargi.pdf`: the scan, 24 A4 pages rotated 90°, two canvases per page
+- `data/canvas cotech elargis.pdf`: the blank template, 2 landscape pages
+
+Odd pages hold Canevas 2 (top) and Consommation (bottom), even pages hold Canevas 3 (top) and Canevas 1 (bottom). Pages 2k−1 and 2k belong to participant k. The blank questionnaire is in `questions.md`.
+
+## Install
+
+Requires [uv](https://docs.astral.sh/uv/). Pick the torch build with an extra:
+
+```bash
+uv sync --extra cpu     # CPU
+uv sync --extra cu126   # NVIDIA GPU (CUDA 12.6 wheels, still support Volta / V100)
+```
+
+Then run the scripts with `uv run --no-sync <script>` so uv keeps the chosen torch build.
+
+## Run
+
+```bash
+uv run --no-sync run.py                                          # all 12 participants, LightOnOCR-3-1B
+uv run --no-sync run.py --model lightonai/LightOnOCR-3-4B        # larger model (GPU)
+uv run --no-sync run.py --participants 1 2                       # subset
+uv run --no-sync bakeoff.py                                      # compare 1B / 0.8B / 4B on participant 1
+uv run --no-sync bakeoff.py --configs lightonai/LightOnOCR-3-4B --participant 3
+uv run --no-sync register.py work/pages/*.png                    # registration overlays in work/debug/
+```
+
+Outputs go to `output/participant_XX.md`. OCR results are cached per model in `work/cache/`, so reruns only transcribe new zones.
+
+## Pipeline
+
+| File | Role |
+|---|---|
+| `split.py` | Renders each page at 300 dpi and cuts it into upright top/bottom halves (`work/pages/`) |
+| `zones.yaml` | Every question per canvas in template PDF points: `text` zones (with the printed `label` to strip), `stars` and `checkboxes` |
+| `template.py` | Renders the template canvases and converts zones to pixels |
+| `register.py` | ORB + RANSAC similarity alignment of a scan half onto the best matching template canvas |
+| `marks.py` | Checkboxes and stars from the mean darkness inside each shape; `has_handwriting` skips empty text zones |
+| `ocr.py` | LightOnOCR-3 transcription with French-only decoding |
+| `run.py` | Full pipeline and Markdown writer |
+| `bakeoff.py` | Side-by-side comparison of models on one participant |
+
+## Model notes
+
+- `LightOnOCR-3-1B` is labelled `mistral3` in its config; it is loaded with `LightOnOcrForConditionalGeneration` and a key mapping `language_model.model.` → `model.language_model.`. The 0.8B and 4B use `Qwen3_5ForConditionalGeneration` through `AutoModelForImageTextToText`.
+- Dtype: float32 on CPU and on pre-Ampere GPUs (V100 has no native bf16; float32 4B needs ~16 GB VRAM), bf16 on Ampere and newer. On a laptop CPU float32 with 4 threads is ~2.7× faster than bf16 (~11 s per zone for the 1B).
+- Decoding is masked to French characters. If at any step the model's top choice is a letter from another script, the zone is left empty.
+- Without `flash-linear-attention` and `causal-conv1d`, the Qwen3.5-based models (0.8B, 4B) use slower reference kernels.
+
+## Calibration
+
+- Text zones start at the printed label because handwriting overlaps it; the label is stripped from the OCR output (fuzzy match), as are labels of neighbouring zones caught at the end.
+- `has_handwriting`: at least 400 dark pixels (< 150) outside the dilated template print. On this scan empty zones stay below ~450 and the shortest real answer ("Oui") is 471.
+- Marks: empty shapes score ≤ 0.08, marked ones ≥ 0.108, threshold 0.09; scores in 0.05–0.15 are flagged "(à vérifier)". The star rating is the highest marked star.
