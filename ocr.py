@@ -4,14 +4,15 @@ import torch
 from transformers import AutoModelForImageTextToText, AutoProcessor, LightOnOcrConfig, LightOnOcrForConditionalGeneration, LogitsProcessor, LogitsProcessorList
 from transformers.convert_slow_tokenizer import bytes_to_unicode
 
-DEFAULT_MODEL = "lightonai/LightOnOCR-3-1B"
 PROMPTS = {"PaddleOCR-VL": "OCR:"}
 MAX_NEW_TOKENS = 384
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.bfloat16 if DEVICE == "cuda" and torch.cuda.get_device_capability()[0] >= 8 else torch.float32
+DEFAULT_MODEL = "lightonai/LightOnOCR-3-4B" if DEVICE == "cuda" else "lightonai/LightOnOCR-3-1B"
 NUM_THREADS = 4
 LIGHTON_MISTRAL3_KEYS = {r"^language_model\.model\.": "model.language_model."}
-FRENCH_CHARACTERS = set(string.ascii_letters + string.digits + string.punctuation + " \n  " + "àâäçéèêëîïôöùûüÿœæÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆ«»‘’“”–—…°€")
+MARKUP_CHARACTERS = set("<>#|`")
+FRENCH_CHARACTERS = set(string.ascii_letters + string.digits + string.punctuation + " \n  " + "àâäçéèêëîïôöùûüÿœæÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆ«»‘’“”–—…°€") - MARKUP_CHARACTERS
 FRENCH_LEAD_BYTES = {0xC2, 0xC3, 0xC5, 0xE2}
 FOREIGN_SCRIPT_LEAD_BYTES = set(range(0xCD, 0xE0)) | set(range(0xE3, 0xEE))
 BYTE_DECODER = {char: byte for byte, char in bytes_to_unicode().items()}

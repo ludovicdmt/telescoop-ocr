@@ -27,8 +27,8 @@ Then run the scripts with `uv run --no-sync <script>` so uv keeps the chosen tor
 ## Run
 
 ```bash
-uv run --no-sync run.py                                          # all 12 participants, LightOnOCR-3-1B
-uv run --no-sync run.py --model lightonai/LightOnOCR-3-4B        # larger model (GPU)
+uv run --no-sync run.py                                          # all 12 participants: LightOnOCR-3-4B on GPU, 1B on CPU
+uv run --no-sync run.py --model lightonai/LightOnOCR-3-1B        # pick another model
 uv run --no-sync run.py --participants 1 2                       # subset
 uv run --no-sync bakeoff.py                                      # compare 1B / 0.8B / 4B on participant 1
 uv run --no-sync bakeoff.py --configs lightonai/LightOnOCR-3-4B --participant 3
@@ -55,6 +55,8 @@ Outputs go to `output/participant_XX.md`. OCR results are cached per model in `w
 - `LightOnOCR-3-1B` is labelled `mistral3` in its config; it is loaded with `LightOnOcrForConditionalGeneration` and a key mapping `language_model.model.` → `model.language_model.`. The 0.8B and 4B use `Qwen3_5ForConditionalGeneration` through `AutoModelForImageTextToText`.
 - Dtype: float32 on CPU and on pre-Ampere GPUs (V100 has no native bf16; float32 4B needs ~16 GB VRAM), bf16 on Ampere and newer. On a laptop CPU float32 with 4 threads is ~2.7× faster than bf16 (~11 s per zone for the 1B).
 - Decoding is masked to French characters. If at any step the model's top choice is a letter from another script, the zone is left empty.
+- Markup characters (`<>#|` and backtick) are banned too: on crops with a checkbox or box borders the 4B otherwise switches to `<figure>` descriptions instead of transcribing.
+- GPU bake-off on a V100S, participant 1: 1B 0.9 s/zone, 0.8B 2.5 s/zone, 4B 2.1 s/zone. The 4B reads best (names, "Végéstrate", "déconnexion") but still misreads rare words.
 - Without `flash-linear-attention` and `causal-conv1d`, the Qwen3.5-based models (0.8B, 4B) use slower reference kernels.
 
 ## Calibration

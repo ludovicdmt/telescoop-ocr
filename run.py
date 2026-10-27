@@ -52,7 +52,7 @@ def strip_labels(text, label, other_labels):
 
 
 def clean(text):
-    text = re.sub(r"\s+", " ", text.replace("**", "")).strip(" :\n")
+    text = re.sub(r"\s+", " ", text.replace("**", "")).strip(" :*-\n")
     return re.sub(r"^[-–□☐■•*\s]+", "", text)
 
 
