@@ -1,3 +1,5 @@
+import codecs
+import re
 import string
 
 import torch
@@ -70,6 +72,26 @@ class FrenchOnly(LogitsProcessor):
         return scores + mask
 
 
+def word_confidences(tokenizer, token_ids, probabilities):
+    special = set(tokenizer.all_special_ids)
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="ignore")
+    chars, char_probabilities, pending = [], [], []
+    for token_id, probability in zip(token_ids, probabilities):
+        if token_id in special:
+            continue
+        for byte in token_bytes(tokenizer, token_id):
+            pending.append(probability)
+            for char in decoder.decode(bytes([byte])):
+                if char in FRENCH_CHARACTERS:
+                    chars.append(char)
+                    char_probabilities.append(min(pending))
+            if decoder.getstate()[0] == b"":
+                pending = []
+    text = "".join(chars)
+    words = [[match.start(), match.end(), round(min(char_probabilities[match.start():match.end()]), 3)] for match in re.finditer(r"[\w'’-]+", text)]
+    return {"text": text, "words": words}
+
+
 def load_model(model_id):
     if "LightOnOCR-3-1B" in model_id:
         config = LightOnOcrConfig.from_pretrained(model_id)
@@ -101,8 +123,16 @@ class Transcriber:
         )
         inputs = {key: value.to(DEVICE, self.model.dtype) if value.is_floating_point() else value.to(DEVICE) for key, value in inputs.items()}
         french = FrenchOnly(self.allowed_ids, self.foreign_ids)
-        output = self.model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, logits_processor=LogitsProcessorList([french]))
+        output = self.model.generate(
+            **inputs,
+            max_new_tokens=MAX_NEW_TOKENS,
+            do_sample=False,
+            logits_processor=LogitsProcessorList([french]),
+            return_dict_in_generate=True,
+            output_scores=True,
+        )
         if french.chose_foreign_script:
-            return ""
-        text = self.processor.decode(output[0, inputs["input_ids"].shape[1]:], skip_special_tokens=True)
-        return "".join(char for char in text if char in FRENCH_CHARACTERS).strip()
+            return {"text": "", "words": []}
+        token_ids = output.sequences[0, inputs["input_ids"].shape[1]:].tolist()
+        probabilities = torch.stack(output.scores)[:, 0].float().softmax(-1).gather(-1, torch.tensor(token_ids, device=DEVICE)[:, None])[:, 0].tolist()
+        return word_confidences(self.processor.tokenizer, token_ids, probabilities)

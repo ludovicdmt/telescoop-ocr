@@ -21,6 +21,7 @@ OUTPUT_DIR = Path("output")
 CANVAS_ORDER = ["canevas1", "canevas2", "canevas3", "consommation"]
 LABEL_MATCH = 0.75
 UNCERTAIN = " _(à vérifier)_"
+LOW_CONFIDENCE = 0.5
 EMPTY = "_(vide)_"
 
 
@@ -53,7 +54,15 @@ def strip_labels(text, label, other_labels):
 
 def clean(text):
     text = re.sub(r"\s+", " ", text.replace("**", "")).strip(" :*-\n")
-    return re.sub(r"^[-–□☐■•*\s]+", "", text)
+    return re.sub(r"^(?:[-–□☐■•*\s]|\[[ xX]?\])+", "", text)
+
+
+def mark_low_confidence(entry):
+    text = entry["text"]
+    for start, end, probability in reversed(entry["words"]):
+        if probability < LOW_CONFIDENCE:
+            text = f"{text[:start]}[{text[start:end]}?]{text[end:]}"
+    return text
 
 
 class Reader:
@@ -67,18 +76,19 @@ class Reader:
     def transcribe(self, stem, key, crop):
         path = self.cache_dir / f"{stem}.json"
         cache = json.loads(path.read_text()) if path.exists() else {}
-        if key not in cache or not is_french_text(cache[key]):
+        entry = cache.get(key)
+        if not isinstance(entry, dict) or not is_french_text(entry["text"]):
             if self.transcriber is None:
                 self.transcriber = Transcriber(self.model_id)
             start = time.time()
             image = Image.fromarray(crop)
             if self.scale != 1:
                 image = image.resize((round(image.width * self.scale), round(image.height * self.scale)), Image.LANCZOS)
-            cache[key] = self.transcriber.transcribe(image)
+            entry = cache[key] = self.transcriber.transcribe(image)
             self.seconds.append(time.time() - start)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(cache, ensure_ascii=False, indent=1))
-        return cache[key]
+        return entry
 
 
 def field_key(field):
@@ -89,7 +99,7 @@ def read_text(reader, stem, warped, template, field, labels):
     x0, y0, x1, y1 = field["bbox"]
     if not has_handwriting(warped, template, field["bbox"]):
         return ""
-    raw = reader.transcribe(stem, field_key(field), warped[y0:y1, x0:x1])
+    raw = mark_low_confidence(reader.transcribe(stem, field_key(field), warped[y0:y1, x0:x1]))
     other_labels = labels - {field.get("label")}
     return clean(strip_labels(clean(raw), field.get("label"), other_labels))
 

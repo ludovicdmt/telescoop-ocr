@@ -30,12 +30,10 @@ Then run the scripts with `uv run --no-sync <script>` so uv keeps the chosen tor
 uv run --no-sync run.py                                          # all 12 participants: LightOnOCR-3-4B on GPU, 1B on CPU
 uv run --no-sync run.py --model lightonai/LightOnOCR-3-1B        # pick another model
 uv run --no-sync run.py --participants 1 2                       # subset
-uv run --no-sync bakeoff.py                                      # compare 1B / 0.8B / 4B on participant 1
-uv run --no-sync bakeoff.py --configs lightonai/LightOnOCR-3-4B --participant 3
 uv run --no-sync register.py work/pages/*.png                    # registration overlays in work/debug/
 ```
 
-Outputs go to `output/participant_XX.md`. OCR results are cached per model in `work/cache/`, so reruns only transcribe new zones.
+Outputs go to `output/participant_XX.md`. Words the model was unsure about are marked `[word?]`; proofread those against the scan. OCR results (text and per-word confidence) are cached per model in `work/cache/`, so reruns only transcribe new zones and changing `LOW_CONFIDENCE` in `run.py` only needs a rerun of the cached pipeline.
 
 ## Pipeline
 
@@ -48,7 +46,6 @@ Outputs go to `output/participant_XX.md`. OCR results are cached per model in `w
 | `marks.py` | Checkboxes and stars from the mean darkness inside each shape; `has_handwriting` skips empty text zones |
 | `ocr.py` | LightOnOCR-3 transcription with French-only decoding |
 | `run.py` | Full pipeline and Markdown writer |
-| `bakeoff.py` | Side-by-side comparison of models on one participant |
 
 ## Model notes
 
@@ -56,7 +53,8 @@ Outputs go to `output/participant_XX.md`. OCR results are cached per model in `w
 - Dtype: float32 on CPU and on pre-Ampere GPUs (V100 has no native bf16; float32 4B needs ~16 GB VRAM), bf16 on Ampere and newer. On a laptop CPU float32 with 4 threads is ~2.7× faster than bf16 (~11 s per zone for the 1B).
 - Decoding is masked to French characters. If at any step the model's top choice is a letter from another script, the zone is left empty.
 - Markup characters (`<>#|` and backtick) are banned too: on crops with a checkbox or box borders the 4B otherwise switches to `<figure>` descriptions instead of transcribing.
-- GPU bake-off on a V100S, participant 1: 1B 0.9 s/zone, 0.8B 2.5 s/zone, 4B 2.1 s/zone. The 4B reads best (names, "Végéstrate", "déconnexion") but still misreads rare words.
+- Model choice, compared on participant 1 on a V100S: 1B 0.9 s/zone, 0.8B 2.5 s/zone, 4B 2.1 s/zone. The 4B reads best (names, "Végéstrate", "déconnexion") but still misreads rare words.
+- Word confidence is the lowest probability of the word's tokens (after the French mask). With the 1B on participant 1, a 0.5 threshold flags 4 of 7 wrong words and about 1 in 14 correct ones.
 - Without `flash-linear-attention` and `causal-conv1d`, the Qwen3.5-based models (0.8B, 4B) use slower reference kernels.
 
 ## Calibration
